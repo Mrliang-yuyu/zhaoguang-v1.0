@@ -127,6 +127,16 @@
       border: 1px solid rgba(45,122,99,.14);
     }
     .today-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .latest-summary {
+      display: grid; gap: 8px;
+      padding: 12px; border-radius: 12px; background: rgba(247, 250, 248, 0.9); border: 1px solid var(--line);
+    }
+    .latest-summary h3 { margin: 0; font-size: 13px; color: var(--muted); }
+    .latest-row {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--text);
+      font-size: 12px; line-height: 1.45;
+    }
+    .latest-row strong { font-size: 13px; }
     .today-head strong { font-size: 15px; }
     .today-head span { font-size: 12px; color: var(--muted); }
 
@@ -209,6 +219,11 @@
           <div class="pill" id="nextReminder">暂无提醒</div>
         </div>
         <div class="progress"><i id="progressBar"></i></div>
+        <div class="latest-summary">
+          <h3>最近记录</h3>
+          <div class="latest-row" id="latestMedRow">用药：暂无</div>
+          <div class="latest-row" id="latestPhotoRow">照光：暂无</div>
+        </div>
         <div class="summary-grid">
           <div class="metric">
             <label>用药完成</label>
@@ -569,11 +584,20 @@
       const sleep = sleepSummary();
       const photoDose = photoRecords.reduce((sum, r) => sum + (Number(r.dose) || 0), 0);
       const sleepHours = sleep ? sleep.hours : 0;
+      const latestMed = medRecords[0] || null;
+      const latestPhoto = photoRecords[0] || null;
 
       $("medCount").textContent = medRecords.length;
       $("photoCount").textContent = photoRecords.length;
       $("photoDoseLabel").textContent = photoDose.toFixed(1).replace(/\.0$/, "");
       $("sleepHours").textContent = sleep ? sleep.hours.toFixed(1) : "0.0";
+
+      $("latestMedRow").innerHTML = latestMed
+        ? `用药：<strong>${latestMed.time}</strong> · ${latestMed.name || "未命名药物"}${latestMed.note ? ` · ${latestMed.note}` : ""}`
+        : "用药：暂无";
+      $("latestPhotoRow").innerHTML = latestPhoto
+        ? `照光：<strong>${latestPhoto.time}</strong> · ${latestPhoto.dose} 次${latestPhoto.note ? ` · ${latestPhoto.note}` : ""}`
+        : "照光：暂无";
 
       const allTargetsMet = medRecords.length >= state.settings.medPlan && sleep && sleep.qualified && photoRecords.length > 0;
       const statusText = allTargetsMet ? "今天完成得不错" : (medRecords.length || photoRecords.length || sleep ? "今天继续补齐" : "等待今天的第一条记录");
