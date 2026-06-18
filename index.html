@@ -391,7 +391,7 @@
             <input id="photoTime" type="time" />
           </div>
           <div class="field">
-            <label for="photoDose">本次用量（次）</label>
+            <label for="photoDose">本次用量（mJ）</label>
             <input id="photoDose" type="number" min="0" step="1" placeholder="如 1" />
           </div>
         </div>
@@ -595,7 +595,7 @@
         ? `用药：<strong>${latestMed.time}</strong> · ${latestMed.name || "未命名药物"}${latestMed.note ? ` · ${latestMed.note}` : ""}`
         : "用药：暂无";
       $("latestPhotoRow").innerHTML = latestPhoto
-        ? `照光：<strong>${latestPhoto.time}</strong> · ${latestPhoto.dose} 次${latestPhoto.note ? ` · ${latestPhoto.note}` : ""}`
+          ? `照光：<strong>${latestPhoto.time}</strong> · ${latestPhoto.dose} mJ${latestPhoto.note ? ` · ${latestPhoto.note}` : ""}`
         : "照光：暂无";
 
       const allTargetsMet = medRecords.length >= state.settings.medPlan && sleep && sleep.qualified && photoRecords.length > 0;
@@ -634,7 +634,7 @@
         const details = record.type === "med"
           ? `${record.time} · ${record.name || "未命名药物"}${record.note ? ` · ${record.note}` : ""}`
           : record.type === "photo"
-            ? `${record.time} · ${record.dose} 次${record.note ? ` · ${record.note}` : ""}`
+            ? `${record.time} · ${record.dose} mJ${record.note ? ` · ${record.note}` : ""}`
             : `${record.startTime} - ${record.endTime} · ${record.hours.toFixed(1)} 小时 · 评分 ${record.score}/5${record.note ? ` · ${record.note}` : ""}`;
 
         const detailRows = record.type === "med"
@@ -648,7 +648,7 @@
             ? `
               <div class="record-grid">
                 <div class="record-line"><strong>照光详情</strong>${record.time} · ${record.note ? record.note : "暂无备注"}</div>
-                <div class="record-line"><strong>照光强度</strong>${record.dose} 次</div>
+                <div class="record-line"><strong>照光强度</strong>${record.dose} mJ</div>
               </div>
             `
             : "";
