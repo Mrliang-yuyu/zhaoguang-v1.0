@@ -102,6 +102,15 @@
     }
     .list-item h3 { margin: 0; font-size: 14px; }
     .list-item p { margin: 5px 0 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+    .record-doses {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    }
+    .dose-pill {
+      display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 5px 8px;
+      font-size: 11px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text);
+    }
+    .dose-pill.med { color: var(--accent); background: rgba(45, 122, 99, 0.08); border-color: rgba(45, 122, 99, 0.18); }
+    .dose-pill.photo { color: var(--warn); background: rgba(199, 122, 40, 0.08); border-color: rgba(199, 122, 40, 0.18); }
     .list-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .tag {
       display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 5px 8px; font-size: 11px;
@@ -602,8 +611,14 @@
         const details = record.type === "med"
           ? `${record.time} · ${record.name || "未命名药物"}${record.note ? ` · ${record.note}` : ""}`
           : record.type === "photo"
-            ? `${record.time} · ${record.dose} ml${record.note ? ` · ${record.note}` : ""}`
+            ? `${record.time} · ${record.dose} 次${record.note ? ` · ${record.note}` : ""}`
             : `${record.startTime} - ${record.endTime} · ${record.hours.toFixed(1)} 小时 · 评分 ${record.score}/5${record.note ? ` · ${record.note}` : ""}`;
+
+        const dosePills = record.type === "med"
+          ? `<div class="record-doses"><span class="dose-pill med">药量：${record.name || "未命名药物"}</span>${record.note ? `<span class="dose-pill med">备注：${record.note}</span>` : ""}</div>`
+          : record.type === "photo"
+            ? `<div class="record-doses"><span class="dose-pill photo">光量：${record.dose} 次</span>${record.note ? `<span class="dose-pill photo">备注：${record.note}</span>` : ""}</div>`
+            : "";
 
         const metaTag = record.type === "med"
           ? `<span class="tag good">用药</span>`
@@ -618,6 +633,7 @@
             <div>
               <h3>${icon} ${record.type === "med" ? "用药记录" : record.type === "photo" ? "照光记录" : "睡眠记录"}</h3>
               <p>${details}</p>
+              ${dosePills}
               <div class="list-meta">
                 ${metaTag}
                 <span class="tag">${record.date}</span>
