@@ -97,20 +97,19 @@
 
     .list { display: grid; gap: 8px; }
     .list-item {
-      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center;
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
       padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: #fff;
     }
+    .record-grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px;
+    }
+    .record-line {
+      min-width: 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2);
+      font-size: 12px; line-height: 1.45; color: var(--text);
+    }
+    .record-line strong { display: block; margin-bottom: 3px; font-size: 12px; color: var(--muted); font-weight: 600; }
     .list-item h3 { margin: 0; font-size: 14px; }
     .list-item p { margin: 5px 0 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
-    .record-doses {
-      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
-    }
-    .dose-pill {
-      display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 5px 8px;
-      font-size: 11px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text);
-    }
-    .dose-pill.med { color: var(--accent); background: rgba(45, 122, 99, 0.08); border-color: rgba(45, 122, 99, 0.18); }
-    .dose-pill.photo { color: var(--warn); background: rgba(199, 122, 40, 0.08); border-color: rgba(199, 122, 40, 0.18); }
     .list-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .tag {
       display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 5px 8px; font-size: 11px;
@@ -638,10 +637,20 @@
             ? `${record.time} · ${record.dose} 次${record.note ? ` · ${record.note}` : ""}`
             : `${record.startTime} - ${record.endTime} · ${record.hours.toFixed(1)} 小时 · 评分 ${record.score}/5${record.note ? ` · ${record.note}` : ""}`;
 
-        const dosePills = record.type === "med"
-          ? `<div class="record-doses"><span class="dose-pill med">药量：${record.name || "未命名药物"}</span>${record.note ? `<span class="dose-pill med">备注：${record.note}</span>` : ""}</div>`
+        const detailRows = record.type === "med"
+          ? `
+            <div class="record-grid">
+              <div class="record-line"><strong>用药详情</strong>${record.time} · ${record.name || "未命名药物"}${record.note ? ` · ${record.note}` : ""}</div>
+              <div class="record-line"><strong>药物用量</strong>${record.name || "未命名药物"}${record.note ? ` · ${record.note}` : ""}</div>
+            </div>
+          `
           : record.type === "photo"
-            ? `<div class="record-doses"><span class="dose-pill photo">光量：${record.dose} 次</span>${record.note ? `<span class="dose-pill photo">备注：${record.note}</span>` : ""}</div>`
+            ? `
+              <div class="record-grid">
+                <div class="record-line"><strong>照光详情</strong>${record.time} · ${record.note ? record.note : "暂无备注"}</div>
+                <div class="record-line"><strong>照光强度</strong>${record.dose} 次</div>
+              </div>
+            `
             : "";
 
         const metaTag = record.type === "med"
@@ -655,16 +664,16 @@
         return `
           <div class="list-item">
             <div>
-              <h3>${icon} ${record.type === "med" ? "用药记录" : record.type === "photo" ? "照光记录" : "睡眠记录"}</h3>
+              <h3>${record.type === "med" ? "用药记录" : record.type === "photo" ? "照光记录" : "睡眠记录"}</h3>
               <p>${details}</p>
-              ${dosePills}
+              ${detailRows}
               <div class="list-meta">
                 ${metaTag}
                 <span class="tag">${record.date}</span>
               </div>
             </div>
             <div class="mini-actions">
-              <button class="btn small warn" data-delete="${record.id}">${iconSvg.trash} 删除</button>
+              <button class="btn small warn" data-delete="${record.id}">删除</button>
             </div>
           </div>
         `;
