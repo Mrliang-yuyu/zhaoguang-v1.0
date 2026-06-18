@@ -445,7 +445,7 @@
           <h2>今日记录</h2>
           <small>按时间排序，可直接删除或补记</small>
         </div>
-        <button class="btn small ghost" id="exportBtn">导出 JSON</button>
+        <button class="btn small ghost" id="exportBtn">导出表格</button>
       </div>
       <div class="list" id="recordsList"></div>
       <p class="note hidden" id="emptyState">今天还没有记录，先从“记录”按钮开始吧。</p>
@@ -809,15 +809,45 @@
       }
     };
 
-    const exportJson = () => {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const csvEscape = (value) => {
+      const text = String(value ?? "");
+      if (/[",
+]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+      return text;
+    };
+
+    const exportTable = () => {
+      const rows = [
+        ["日期", "类型", "时间", "用药详情", "药物用量", "照光强度(mJ)", "睡眠时长(小时)", "睡眠评分", "是否合格", "备注"],
+        ...state.records
+          .slice()
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+          .map((record) => [
+            record.date || "",
+            record.type === "med" ? "用药" : record.type === "photo" ? "照光" : "睡眠",
+            record.time || record.startTime || "",
+            record.type === "med" ? `${record.name || ""}` : "",
+            record.type === "med" ? `${record.note || ""}` : "",
+            record.type === "photo" ? `${record.dose ?? ""}` : "",
+            record.type === "sleep" ? `${Number(record.hours || 0).toFixed(1)}` : "",
+            record.type === "sleep" ? `${record.score ?? ""}` : "",
+            record.type === "sleep" ? (record.qualified ? "合格" : "不合格") : "",
+            record.type === "sleep"
+              ? `${record.reason || ""}${record.note ? ` · ${record.note}` : ""}`
+              : `${record.note || ""}`,
+          ]),
+      ];
+
+      const csv = rows.map((row) => row.map(csvEscape).join(",")).join("
+");
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `white-patch-treatment-${formatDate()}.json`;
+      a.download = `white-patch-treatment-${formatDate()}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      toast("已导出 JSON");
+      toast("已导出表格");
     };
 
     const wireEvents = () => {
@@ -875,7 +905,7 @@
       $("clearPhotoFormBtn").addEventListener("click", clearPhotoForm);
       $("clearSleepFormBtn").addEventListener("click", clearSleepForm);
       $("sleepScore").addEventListener("input", (e) => $("sleepScoreValue").textContent = e.target.value);
-      $("exportBtn").addEventListener("click", exportJson);
+      $("exportBtn").addEventListener("click", exportTable);
 
       $("recordsList").addEventListener("click", (e) => {
         const btn = e.target.closest("[data-delete]");
