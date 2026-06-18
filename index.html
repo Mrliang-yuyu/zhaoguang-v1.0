@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>照光治疗记录</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f8f7;
+      --surface: #ffffff;
+      --surface-2: #eef5f2;
+      --line: #d7e4df;
+      --text: #17312b;
+      --muted: #62756f;
+      --accent: #2d7a63;
+      --accent-2: #5da78f;
+      --warn: #c77a28;
+      --good: #2f8d68;
+      --bad: #c24747;
+      --shadow: 0 10px 30px rgba(20, 48, 42, 0.08);
+      --radius: 16px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; border: 0; }
+
+    .app { max-width: 480px; margin: 0 auto; min-height: 100vh; padding: 14px 14px 28px; }
+
+    .topbar {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      margin-bottom: 14px;
+    }
+    .brand h1 { margin: 0; font-size: 22px; line-height: 1.15; letter-spacing: 0; }
+    .brand p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 999px;
+      background: rgba(45, 122, 99, 0.08); color: var(--accent); font-size: 12px; white-space: nowrap;
+    }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 14px; margin-bottom: 12px;
+    }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .metric {
+      background: linear-gradient(180deg, #fff, #f8fbfa); border: 1px solid var(--line); border-radius: 14px; padding: 12px;
+      min-height: 92px; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .metric label { font-size: 12px; color: var(--muted); }
+    .metric strong { font-size: 26px; line-height: 1; letter-spacing: 0; }
+    .metric span { font-size: 12px; color: var(--muted); }
+
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;
+    }
+    .section-head h2 { margin: 0; font-size: 16px; }
+    .section-head small { color: var(--muted); font-size: 12px; }
+
+    .row { display: grid; gap: 10px; }
+    .field {
+      display: grid; gap: 6px;
+    }
+    .field label { font-size: 12px; color: var(--muted); }
+    .field input, .field textarea, .field select {
+      width: 100%; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--text);
+      padding: 12px 12px; outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .field textarea { min-height: 82px; resize: vertical; }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: rgba(45, 122, 99, 0.55); box-shadow: 0 0 0 4px rgba(45, 122, 99, 0.08); }
+
+    .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .three-col { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
+    .chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 9px 11px; border-radius: 999px;
+      background: var(--surface-2); border: 1px solid var(--line); color: var(--text); font-size: 12px;
+    }
+    .chip.active { background: rgba(45, 122, 99, 0.12); border-color: rgba(45, 122, 99, 0.28); color: var(--accent); }
+
+    .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+      padding: 0 14px; border-radius: 12px; background: var(--surface-2); color: var(--text); border: 1px solid var(--line);
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.ghost { background: transparent; }
+    .btn.warn { background: rgba(199, 122, 40, 0.12); border-color: rgba(199, 122, 40, 0.3); color: var(--warn); }
+    .btn.small { min-height: 36px; padding: 0 12px; font-size: 12px; border-radius: 10px; }
+
+    .list { display: grid; gap: 8px; }
+    .list-item {
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+      padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: #fff;
+    }
+    .list-item h3 { margin: 0; font-size: 14px; }
+    .list-item p { margin: 5px 0 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+    .list-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 5px 8px; font-size: 11px;
+      background: var(--surface-2); color: var(--muted); border: 1px solid var(--line);
+    }
+    .tag.good { color: var(--good); background: rgba(47, 141, 104, 0.1); border-color: rgba(47, 141, 104, 0.18); }
+    .tag.bad { color: var(--bad); background: rgba(194, 71, 71, 0.08); border-color: rgba(194, 71, 71, 0.16); }
+    .tag.warn { color: var(--warn); background: rgba(199, 122, 40, 0.08); border-color: rgba(199, 122, 40, 0.16); }
+
+    .mini-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+    .today {
+      display: grid; gap: 10px; padding: 12px; border-radius: 14px; background: linear-gradient(180deg, rgba(45,122,99,.07), rgba(45,122,99,.03));
+      border: 1px solid rgba(45,122,99,.14);
+    }
+    .today-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .today-head strong { font-size: 15px; }
+    .today-head span { font-size: 12px; color: var(--muted); }
+
+    .progress {
+      height: 10px; border-radius: 999px; background: #dfe9e5; overflow: hidden;
+    }
+    .progress > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width: 0%; }
+
+    .note {
+      font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 8px;
+    }
+
+    .sleep-badge {
+      padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: #fff;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    }
+    .sleep-badge strong { font-size: 14px; }
+    .sleep-badge span { font-size: 12px; color: var(--muted); }
+
+    .footer-space { height: 18px; }
+    .muted { color: var(--muted); }
+    .hidden { display: none !important; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(92vw, 420px);
+      background: rgba(23,49,43,.96); color: #fff; padding: 12px 14px; border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,.16);
+      font-size: 13px; line-height: 1.45; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+    .checkbox-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .checkbox-row input { width: 18px; height: 18px; }
+
+    .range-wrap { display: grid; gap: 8px; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+    .icon-btn {
+      width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: #fff; display: inline-grid; place-items: center;
+      color: var(--accent);
+    }
+    .icon-btn svg, .btn svg { width: 18px; height: 18px; flex: none; }
+
+    @media (max-width: 390px) {
+      .app { padding: 10px 10px 24px; }
+      .summary-grid, .two-col { grid-template-columns: 1fr; }
+      .three-col { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; }
+      .pill { white-space: normal; text-align: right; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>照光治疗记录</h1>
+        <p>记录用药、照光和睡眠，页面会自动给出今天的合格状态和下一次提醒。</p>
+      </div>
+      <div class="pill" id="dayPill">今日</div>
+    </header>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <h2>今日概览</h2>
+          <small id="todayLabel"></small>
+        </div>
+        <button class="icon-btn" id="resetDayBtn" title="切换到今天">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        </button>
+      </div>
+      <div class="today">
+        <div class="today-head">
+          <div>
+            <strong id="statusText">状态正常</strong><br />
+            <span id="statusSub">等待今天的第一条记录</span>
+          </div>
+          <div class="pill" id="nextReminder">暂无提醒</div>
+        </div>
+        <div class="progress"><i id="progressBar"></i></div>
+        <div class="summary-grid">
+          <div class="metric">
+            <label>用药完成</label>
+            <strong id="medCount">0</strong>
+            <span>次 / 计划 <span id="medPlanLabel">0</span> 次</span>
+          </div>
+          <div class="metric">
+            <label>照光完成</label>
+            <strong id="photoCount">0</strong>
+            <span><span id="photoDoseLabel">0</span> ml 总用量</span>
+          </div>
+          <div class="metric">
+            <label>睡眠时长</label>
+            <strong id="sleepHours">0.0</strong>
+            <span>小时 / 合格线 <span id="sleepTargetLabel">0</span> 小时</span>
+          </div>
+          <div class="metric">
+            <label>睡眠判断</label>
+            <strong id="sleepJudgement">未记录</strong>
+            <span id="sleepReason">先录入昨晚睡眠</span>
+          </div>
+        </div>
+      </div>
+      <p class="note">说明：提醒通过浏览器通知和页面弹窗完成，需允许通知权限，且页面打开时才能自动触发。</p>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <h2>提醒设置</h2>
+          <small>设置用药提醒时间和睡眠合格标准</small>
+        </div>
+        <div class="button-row">
+          <button class="btn small ghost" id="notifyBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            开启通知
+          </button>
+          <button class="btn small primary" id="saveSettingsBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+            保存设置
+          </button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="two-col">
+          <div class="field">
+            <label for="medTimes">用药提醒时间</label>
+            <input id="medTimes" type="text" placeholder="08:00, 20:00" />
+          </div>
+          <div class="field">
+            <label for="medPlan">每日用药计划次数</label>
+            <input id="medPlan" type="number" min="1" max="12" step="1" />
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="sleepTarget">睡眠合格线（小时）</label>
+            <input id="sleepTarget" type="number" min="4" max="12" step="0.5" />
+          </div>
+          <div class="field">
+            <label for="sleepMinScore">睡眠评分合格线</label>
+            <input id="sleepMinScore" type="number" min="1" max="5" step="1" />
+          </div>
+        </div>
+        <div class="checkbox-row">
+          <input id="sleepReminder" type="checkbox" />
+          <label for="sleepReminder">睡前提醒我记录睡眠</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <h2>快速记录</h2>
+          <small>今天的操作都可以直接点</small>
+        </div>
+        <div class="pill" id="reminderCount">0 个提醒</div>
+      </div>
+
+      <div class="list">
+        <div class="list-item">
+          <div>
+            <h3>用药记录</h3>
+            <p>输入时间后点一下就能记一条，也会同步到今日统计。</p>
+            <div class="list-meta">
+              <span class="tag" id="medTakenTag">未完成</span>
+              <span class="tag" id="medTimeTag">最近: --:--</span>
+            </div>
+          </div>
+          <div class="mini-actions">
+            <button class="btn small" id="addMedBtn">+ 记录</button>
+          </div>
+        </div>
+
+        <div class="list-item">
+          <div>
+            <h3>照光记录</h3>
+            <p>记录次数和本次用量，适合照光后马上补一笔。</p>
+            <div class="list-meta">
+              <span class="tag" id="photoDoseTag">总用量 0 ml</span>
+              <span class="tag" id="photoSessionTag">0 次</span>
+            </div>
+          </div>
+          <div class="mini-actions">
+            <button class="btn small" id="addPhotoBtn">+ 记录</button>
+          </div>
+        </div>
+
+        <div class="list-item">
+          <div>
+            <h3>睡眠记录</h3>
+            <p>录入昨晚睡眠后，系统会自动判断是否合格。</p>
+            <div class="list-meta">
+              <span class="tag" id="sleepTag">未判断</span>
+              <span class="tag" id="sleepDurationTag">-- 小时</span>
+            </div>
+          </div>
+          <div class="mini-actions">
+            <button class="btn small" id="fillSleepBtn">+ 记录</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="medFormPanel">
+      <div class="section-head">
+        <div>
+          <h2>新增用药</h2>
+          <small>和提醒时间保持一致最好</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="two-col">
+          <div class="field">
+            <label for="medTime">用药时间</label>
+            <input id="medTime" type="time" />
+          </div>
+          <div class="field">
+            <label for="medName">药物 / 备注</label>
+            <input id="medName" type="text" placeholder="如：外用药、口服药" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="medNote">补充说明</label>
+          <textarea id="medNote" placeholder="记录剂量、部位或不适反应"></textarea>
+        </div>
+        <div class="button-row">
+          <button class="btn primary" id="saveMedBtn">保存用药</button>
+          <button class="btn" id="clearMedFormBtn">清空</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="photoFormPanel">
+      <div class="section-head">
+        <div>
+          <h2>新增照光</h2>
+          <small>每次照光后记一次用量</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="two-col">
+          <div class="field">
+            <label for="photoTime">照光时间</label>
+            <input id="photoTime" type="time" />
+          </div>
+          <div class="field">
+            <label for="photoDose">本次用量（ml）</label>
+            <input id="photoDose" type="number" min="0" step="0.1" placeholder="如 1.5" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="photoNote">照光备注</label>
+          <textarea id="photoNote" placeholder="记录部位、时长、是否有发红等"></textarea>
+        </div>
+        <div class="button-row">
+          <button class="btn primary" id="savePhotoBtn">保存照光</button>
+          <button class="btn" id="clearPhotoFormBtn">清空</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="sleepFormPanel">
+      <div class="section-head">
+        <div>
+          <h2>新增睡眠</h2>
+          <small>判定是否合格</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="two-col">
+          <div class="field">
+            <label for="sleepStart">入睡时间</label>
+            <input id="sleepStart" type="datetime-local" />
+          </div>
+          <div class="field">
+            <label for="sleepEnd">起床时间</label>
+            <input id="sleepEnd" type="datetime-local" />
+          </div>
+        </div>
+        <div class="range-wrap">
+          <label for="sleepScore">睡眠质量评分：<span id="sleepScoreValue">3</span>/5</label>
+          <input id="sleepScore" type="range" min="1" max="5" step="1" value="3" />
+        </div>
+        <div class="field">
+          <label for="sleepNote">睡眠备注</label>
+          <textarea id="sleepNote" placeholder="例如：夜醒次数、午睡情况、精神状态"></textarea>
+        </div>
+        <div class="button-row">
+          <button class="btn primary" id="saveSleepBtn">保存睡眠</button>
+          <button class="btn" id="clearSleepFormBtn">清空</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <h2>今日记录</h2>
+          <small>按时间排序，可直接删除或补记</small>
+        </div>
+        <button class="btn small ghost" id="exportBtn">导出 JSON</button>
+      </div>
+      <div class="list" id="recordsList"></div>
+      <p class="note hidden" id="emptyState">今天还没有记录，先从“记录”按钮开始吧。</p>
+    </section>
+
+    <div class="footer-space"></div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "zhg-v1-treatment-tracker";
+    const DAY_KEY = "zhg-v1-treatment-day";
+
+    const $ = (id) => document.getElementById(id);
+    const now = new Date();
+
+    const defaultState = () => ({
+      settings: {
+        medTimes: ["08:00", "20:00"],
+        medPlan: 2,
+        sleepTarget: 7,
+        sleepMinScore: 3,
+        sleepReminder: true,
+      },
+      records: [],
+      reminderLog: {},
+    });
+
+    const loadState = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaultState();
+        const parsed = JSON.parse(raw);
+        return {
+          ...defaultState(),
+          ...parsed,
+          settings: { ...defaultState().settings, ...(parsed.settings || {}) },
+          records: Array.isArray(parsed.records) ? parsed.records : [],
+          reminderLog: parsed.reminderLog || {},
+        };
+      } catch {
+        return defaultState();
+      }
+    };
+
+    const state = loadState();
+    const saveState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    const formatDate = (date = new Date()) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    };
+
+    const formatTime = (date = new Date()) => {
+      const h = String(date.getHours()).padStart(2, "0");
+      const m = String(date.getMinutes()).padStart(2, "0");
+      return `${h}:${m}`;
+    };
+
+    const day = formatDate(now);
+    if (!localStorage.getItem(DAY_KEY)) localStorage.setItem(DAY_KEY, day);
+
+    const getSelectedDay = () => localStorage.getItem(DAY_KEY) || day;
+    const setSelectedDay = (value) => localStorage.setItem(DAY_KEY, value);
+
+    const toastEl = $("toast");
+    let toastTimer = null;
+    const toast = (message) => {
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+    };
+
+    const iconSvg = {
+      med: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 18.5a4.5 4.5 0 1 0 0-9h-5a4.5 4.5 0 1 0 0 9h5Z"/><path d="M13.5 5.5h-5"/><path d="M8 9.5h5"/></svg>',
+      photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.5"/><path d="M4 7.5h3l1.5-2h7L17 7.5h3A2.5 2.5 0 0 1 22.5 10v7A2.5 2.5 0 0 1 20 19.5H4A2.5 2.5 0 0 1 1.5 17v-7A2.5 2.5 0 0 1 4 7.5Z"/></svg>',
+      sleep: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5a7 7 0 1 0 11 6"/><path d="M12 3v3"/><path d="M16.5 4.5l-2 2"/></svg>',
+      trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>',
+      plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>',
+      check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+      alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+      download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
+    };
+
+    const selectedDay = () => getSelectedDay();
+    const dayRecords = () => state.records.filter((r) => r.date === selectedDay());
+    const todayRecords = () => state.records.filter((r) => r.date === day);
+
+    const timeToMinutes = (time) => {
+      const [h, m] = time.split(":").map(Number);
+      return h * 60 + m;
+    };
+
+    const recordMinutes = (record) => {
+      if (record.time) return timeToMinutes(record.time);
+      if (record.start) return new Date(record.start).getTime() / 60000;
+      return 0;
+    };
+
+    const sortedRecords = () => [...dayRecords()].sort((a, b) => recordMinutes(b) - recordMinutes(a));
+
+    const sleepSummary = () => {
+      const sleepRecords = dayRecords().filter((r) => r.type === "sleep");
+      if (!sleepRecords.length) return null;
+      return sleepRecords[0];
+    };
+
+    const calcProgress = () => {
+      const meds = dayRecords().filter((r) => r.type === "med").length;
+      const photos = dayRecords().filter((r) => r.type === "photo").length;
+      const sleep = sleepSummary();
+      const parts = [
+        meds > 0,
+        photos > 0,
+        !!sleep,
+        sleep ? sleep.qualified : false,
+      ];
+      return Math.round((parts.filter(Boolean).length / parts.length) * 100);
+    };
+
+    const render = () => {
+      $("todayLabel").textContent = `查看日期：${selectedDay()}`;
+      $("dayPill").textContent = selectedDay() === day ? "今日" : selectedDay();
+
+      $("medPlanLabel").textContent = state.settings.medPlan;
+      $("sleepTargetLabel").textContent = state.settings.sleepTarget.toFixed(1).replace(/\.0$/, "");
+      $("reminderCount").textContent = `${state.settings.medTimes.filter(Boolean).length} 个提醒`;
+
+      const medRecords = dayRecords().filter((r) => r.type === "med");
+      const photoRecords = dayRecords().filter((r) => r.type === "photo");
+      const sleep = sleepSummary();
+      const photoDose = photoRecords.reduce((sum, r) => sum + (Number(r.dose) || 0), 0);
+      const sleepHours = sleep ? sleep.hours : 0;
+
+      $("medCount").textContent = medRecords.length;
+      $("photoCount").textContent = photoRecords.length;
+      $("photoDoseLabel").textContent = photoDose.toFixed(1).replace(/\.0$/, "");
+      $("sleepHours").textContent = sleep ? sleep.hours.toFixed(1) : "0.0";
+
+      const allTargetsMet = medRecords.length >= state.settings.medPlan && sleep && sleep.qualified && photoRecords.length > 0;
+      const statusText = allTargetsMet ? "今天完成得不错" : (medRecords.length || photoRecords.length || sleep ? "今天继续补齐" : "等待今天的第一条记录");
+      const statusSub = allTargetsMet
+        ? "用药、照光和睡眠都已记录完成"
+        : `用药 ${medRecords.length}/${state.settings.medPlan} 次，照光 ${photoRecords.length} 次，睡眠 ${sleep ? "已记录" : "未记录"}`;
+      $("statusText").textContent = statusText;
+      $("statusSub").textContent = statusSub;
+
+      $("progressBar").style.width = `${calcProgress()}%`;
+
+      if (sleep) {
+        $("sleepJudgement").textContent = sleep.qualified ? "合格" : "不合格";
+        $("sleepReason").textContent = sleep.reason;
+        $("sleepTag").textContent = sleep.qualified ? "睡眠合格" : "睡眠不合格";
+        $("sleepTag").className = `tag ${sleep.qualified ? "good" : "bad"}`;
+        $("sleepDurationTag").textContent = `${sleep.hours.toFixed(1)} 小时`;
+      } else {
+        $("sleepJudgement").textContent = "未记录";
+        $("sleepReason").textContent = "先录入昨晚睡眠";
+        $("sleepTag").textContent = "未判断";
+        $("sleepTag").className = "tag warn";
+        $("sleepDurationTag").textContent = "-- 小时";
+      }
+
+      $("medTakenTag").textContent = medRecords.length ? "已用药" : "未完成";
+      $("medTakenTag").className = `tag ${medRecords.length ? "good" : "warn"}`;
+      $("medTimeTag").textContent = medRecords.length ? `最近: ${medRecords[0].time || "--:--"}` : "最近: --:--";
+      $("photoDoseTag").textContent = `总用量 ${photoDose.toFixed(1).replace(/\.0$/, "")} ml`;
+      $("photoSessionTag").textContent = `${photoRecords.length} 次`;
+
+      const list = $("recordsList");
+      const records = sortedRecords();
+      list.innerHTML = records.map((record) => {
+        const details = record.type === "med"
+          ? `${record.time} · ${record.name || "未命名药物"}${record.note ? ` · ${record.note}` : ""}`
+          : record.type === "photo"
+            ? `${record.time} · ${record.dose} ml${record.note ? ` · ${record.note}` : ""}`
+            : `${record.startTime} - ${record.endTime} · ${record.hours.toFixed(1)} 小时 · 评分 ${record.score}/5${record.note ? ` · ${record.note}` : ""}`;
+
+        const metaTag = record.type === "med"
+          ? `<span class="tag good">用药</span>`
+          : record.type === "photo"
+            ? `<span class="tag warn">照光</span>`
+            : `<span class="tag ${record.qualified ? "good" : "bad"}">${record.qualified ? "合格" : "不合格"}</span>`;
+
+        const icon = record.type === "med" ? iconSvg.med : record.type === "photo" ? iconSvg.photo : iconSvg.sleep;
+
+        return `
+          <div class="list-item">
+            <div>
+              <h3>${icon} ${record.type === "med" ? "用药记录" : record.type === "photo" ? "照光记录" : "睡眠记录"}</h3>
+              <p>${details}</p>
+              <div class="list-meta">
+                ${metaTag}
+                <span class="tag">${record.date}</span>
+              </div>
+            </div>
+            <div class="mini-actions">
+              <button class="btn small warn" data-delete="${record.id}">${iconSvg.trash} 删除</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      $("emptyState").classList.toggle("hidden", records.length > 0);
+      saveState();
+    };
+
+    const syncSettingsUI = () => {
+      $("medTimes").value = state.settings.medTimes.join(", ");
+      $("medPlan").value = state.settings.medPlan;
+      $("sleepTarget").value = state.settings.sleepTarget;
+      $("sleepMinScore").value = state.settings.sleepMinScore;
+      $("sleepReminder").checked = state.settings.sleepReminder;
+      $("sleepScore").value = 3;
+      $("sleepScoreValue").textContent = "3";
+    };
+
+    const toDateTime = (value) => value ? new Date(value) : null;
+
+    const calcSleep = (start, end, score) => {
+      const startDate = toDateTime(start);
+      const endDate = toDateTime(end);
+      if (!startDate || !endDate || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return null;
+      const diff = (endDate.getTime() - startDate.getTime()) / 3600000;
+      const hours = Math.max(0, diff);
+      const qualified = hours >= Number(state.settings.sleepTarget) && Number(score) >= Number(state.settings.sleepMinScore);
+      const reason = qualified
+        ? `睡眠 ${hours.toFixed(1)} 小时，评分 ${score}/5，达到合格线`
+        : `睡眠 ${hours.toFixed(1)} 小时或评分不足，未达到合格线`;
+      return {
+        hours,
+        qualified,
+        reason,
+        startTime: `${startDate.getHours().toString().padStart(2, "0")}:${startDate.getMinutes().toString().padStart(2, "0")}`,
+        endTime: `${endDate.getHours().toString().padStart(2, "0")}:${endDate.getMinutes().toString().padStart(2, "0")}`,
+      };
+    };
+
+    const addRecord = (record) => {
+      state.records.push(record);
+      toast("已保存到今天的记录里");
+      render();
+    };
+
+    const clearMedForm = () => {
+      $("medTime").value = formatTime(new Date());
+      $("medName").value = "";
+      $("medNote").value = "";
+    };
+
+    const clearPhotoForm = () => {
+      $("photoTime").value = formatTime(new Date());
+      $("photoDose").value = "";
+      $("photoNote").value = "";
+    };
+
+    const clearSleepForm = () => {
+      const base = new Date();
+      const yesterday = new Date(base);
+      yesterday.setDate(base.getDate() - 1);
+      yesterday.setHours(22, 30, 0, 0);
+      const todayMorning = new Date(base);
+      todayMorning.setHours(6, 30, 0, 0);
+      const pad = (n) => String(n).padStart(2, "0");
+      const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      $("sleepStart").value = fmt(yesterday);
+      $("sleepEnd").value = fmt(todayMorning);
+      $("sleepNote").value = "";
+      $("sleepScore").value = 3;
+      $("sleepScoreValue").textContent = "3";
+    };
+
+    const saveSettings = () => {
+      const times = $("medTimes").value.split(/[，,\s]+/).map((s) => s.trim()).filter(Boolean);
+      const medPlan = Math.max(1, Math.min(12, Number($("medPlan").value || 1)));
+      const sleepTarget = Math.max(4, Math.min(12, Number($("sleepTarget").value || 7)));
+      const sleepMinScore = Math.max(1, Math.min(5, Number($("sleepMinScore").value || 3)));
+      state.settings.medTimes = times.length ? times : ["08:00", "20:00"];
+      state.settings.medPlan = medPlan;
+      state.settings.sleepTarget = sleepTarget;
+      state.settings.sleepMinScore = sleepMinScore;
+      state.settings.sleepReminder = $("sleepReminder").checked;
+      saveState();
+      render();
+      toast("设置已保存");
+    };
+
+    const askNotify = async () => {
+      if (!('Notification' in window)) {
+        toast("当前浏览器不支持通知");
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      toast(permission === "granted" ? "通知已开启" : "通知未开启");
+    };
+
+    const sendNotification = (title, body) => {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body });
+      }
+      toast(`${title}：${body}`);
+    };
+
+    const shouldNotifyOnce = (key) => {
+      const currentDay = formatDate();
+      const log = state.reminderLog[currentDay] || (state.reminderLog[currentDay] = []);
+      if (log.includes(key)) return false;
+      log.push(key);
+      saveState();
+      return true;
+    };
+
+    const checkReminders = () => {
+      const current = new Date();
+      const currentMinutes = current.getHours() * 60 + current.getMinutes();
+      const currentDay = formatDate(current);
+
+      state.settings.medTimes.forEach((time) => {
+        const diff = Math.abs(timeToMinutes(time) - currentMinutes);
+        if (diff <= 1 && shouldNotifyOnce(`${currentDay}-med-${time}`)) {
+          sendNotification("用药提醒", `现在该记录 ${time} 的用药了`);
+        }
+      });
+
+      if (state.settings.sleepReminder) {
+        const sleepWindowStart = 21 * 60;
+        const sleepWindowEnd = 23 * 60 + 30;
+        if (currentMinutes >= sleepWindowStart && currentMinutes <= sleepWindowEnd && shouldNotifyOnce(`${currentDay}-sleep`)) {
+          sendNotification("睡眠提醒", "别忘了记录今天的睡眠情况");
+        }
+      }
+    };
+
+    const exportJson = () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `white-patch-treatment-${formatDate()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("已导出 JSON");
+    };
+
+    const wireEvents = () => {
+      $("saveSettingsBtn").addEventListener("click", saveSettings);
+      $("notifyBtn").addEventListener("click", askNotify);
+      $("resetDayBtn").addEventListener("click", () => {
+        setSelectedDay(day);
+        render();
+        toast("已切回今天");
+      });
+      $("addMedBtn").addEventListener("click", () => { $("medFormPanel").scrollIntoView({ behavior: "smooth", block: "start" }); $("medTime").focus(); });
+      $("addPhotoBtn").addEventListener("click", () => { $("photoFormPanel").scrollIntoView({ behavior: "smooth", block: "start" }); $("photoTime").focus(); });
+      $("fillSleepBtn").addEventListener("click", () => { $("sleepFormPanel").scrollIntoView({ behavior: "smooth", block: "start" }); $("sleepStart").focus(); });
+      $("saveMedBtn").addEventListener("click", () => {
+        const time = $("medTime").value || formatTime(new Date());
+        const name = $("medName").value.trim();
+        const note = $("medNote").value.trim();
+        addRecord({ id: crypto.randomUUID(), type: "med", date: selectedDay(), time, name, note, createdAt: Date.now() });
+        clearMedForm();
+      });
+      $("savePhotoBtn").addEventListener("click", () => {
+        const time = $("photoTime").value || formatTime(new Date());
+        const dose = Number($("photoDose").value || 0);
+        const note = $("photoNote").value.trim();
+        addRecord({ id: crypto.randomUUID(), type: "photo", date: selectedDay(), time, dose, note, createdAt: Date.now() });
+        clearPhotoForm();
+      });
+      $("saveSleepBtn").addEventListener("click", () => {
+        const start = $("sleepStart").value;
+        const end = $("sleepEnd").value;
+        const score = Number($("sleepScore").value || 3);
+        const computed = calcSleep(start, end, score);
+        if (!computed) {
+          toast("请先填写完整睡眠时间");
+          return;
+        }
+        addRecord({
+          id: crypto.randomUUID(),
+          type: "sleep",
+          date: selectedDay(),
+          start,
+          end,
+          score,
+          hours: computed.hours,
+          qualified: computed.qualified,
+          reason: computed.reason,
+          startTime: computed.startTime,
+          endTime: computed.endTime,
+          note: $("sleepNote").value.trim(),
+          createdAt: Date.now(),
+        });
+        clearSleepForm();
+      });
+      $("clearMedFormBtn").addEventListener("click", clearMedForm);
+      $("clearPhotoFormBtn").addEventListener("click", clearPhotoForm);
+      $("clearSleepFormBtn").addEventListener("click", clearSleepForm);
+      $("sleepScore").addEventListener("input", (e) => $("sleepScoreValue").textContent = e.target.value);
+      $("exportBtn").addEventListener("click", exportJson);
+
+      $("recordsList").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-delete]");
+        if (!btn) return;
+        const id = btn.getAttribute("data-delete");
+        state.records = state.records.filter((record) => record.id !== id);
+        render();
+        toast("已删除记录");
+      });
+    };
+
+    const initForms = () => {
+      const currentTime = formatTime(new Date());
+      $("medTime").value = currentTime;
+      $("photoTime").value = currentTime;
+      clearSleepForm();
+    };
+
+    syncSettingsUI();
+    initForms();
+    wireEvents();
+    render();
+    checkReminders();
+    setInterval(checkReminders, 60000);
+    setInterval(() => {
+      if (selectedDay() !== day) return;
+      render();
+    }, 30000);
+
+    window.addEventListener("storage", () => {
+      Object.assign(state, loadState());
+      syncSettingsUI();
+      render();
+    });
+  </script>
+</body>
+</html>
